@@ -1,75 +1,98 @@
 import time
+import threading
 import RPi.GPIO as GPIO
 import paho.mqtt.client as mqtt
+import json
+import yaml
 
-# Relay GPIO Pins (BCM numbering)
-TOOLS = {
-    "tool1": {"gate_pin": 17},
-    "tool2": {"gate_pin": 27},
-    "tool3": {"gate_pin": 22},
-}
-DUST_COLLECTOR_PIN = 23
+# Load YAML file
+with open("config.yml", "r") as file:
+    config = yaml.safe_load(file)
+
+TOOLS = config["tools"]
+DUST_COLLECTOR_PIN = config["collector_pin"]
 
 # State tracking
 current_tool = None
 
-# GPIO Setup
+# GPIO setup
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 GPIO.setup(DUST_COLLECTOR_PIN, GPIO.OUT)
 GPIO.output(DUST_COLLECTOR_PIN, GPIO.LOW)
 
-for tool in TOOLS.values():
-    GPIO.setup(tool["gate_pin"], GPIO.OUT)
-    GPIO.output(tool["gate_pin"], GPIO.LOW)
+for tool in TOOLS:
+    GPIO.setup(tool["relay_pin"], GPIO.OUT)
+    GPIO.output(tool["relay_pin"], GPIO.LOW)
+    GPIO.setup(tool["on_button_pin"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(tool["off_button_pin"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Tool control functions
-def activate_tool(tool_name):
+def activate_tool(index):
     global current_tool
-    print(f"Activating {tool_name}")
-    if tool_name not in TOOLS:
-        print("Unknown tool")
-        return
-
-    for name, tool in TOOLS.items():
-        GPIO.output(tool["gate_pin"], GPIO.HIGH if name == tool_name else GPIO.LOW)
-
+    print(f"[GPIO/MQTT] Activating {TOOLS[index]['name']}")
+    for i, tool in enumerate(TOOLS):
+        GPIO.output(tool["relay_pin"], GPIO.HIGH if i == index else GPIO.LOW)
     GPIO.output(DUST_COLLECTOR_PIN, GPIO.HIGH)
-    current_tool = tool_name
+    current_tool = index
 
 def deactivate_system():
     global current_tool
-    print("Turning off dust collection")
-    for tool in TOOLS.values():
-        GPIO.output(tool["gate_pin"], GPIO.LOW)
-
+    print("[GPIO/MQTT] Deactivating all tools")
+    for tool in TOOLS:
+        GPIO.output(tool["relay_pin"], GPIO.LOW)
     GPIO.output(DUST_COLLECTOR_PIN, GPIO.LOW)
     current_tool = None
 
-# MQTT Callbacks
+# Button listeners
+def monitor_buttons():
+    while True:
+        for i, tool in enumerate(TOOLS):
+            if GPIO.input(tool["on_button_pin"]) == GPIO.LOW:
+                activate_tool(i)
+                time.sleep(0.3)
+            elif GPIO.input(tool["off_button_pin"]) == GPIO.LOW:
+                deactivate_system()
+                time.sleep(0.3)
+        time.sleep(0.1)
+
+# MQTT callbacks
 def on_connect(client, userdata, flags, rc):
-    print("Connected to MQTT broker with result code " + str(rc))
+    print("Connected to MQTT broker with result code", rc)
     client.subscribe("dust/+/+")
 
 def on_message(client, userdata, msg):
-    print(f"MQTT message received: {msg.topic} {msg.payload.decode()}")
-    topic_parts = msg.topic.split("/")
-    if len(topic_parts) != 3:
-        return
+    try:
+        parts = msg.topic.split("/")
+        if len(parts) != 3:
+            return
+        _, tool_id, action = parts
+        for i, tool in enumerate(TOOLS):
+            if tool["id"] == tool_id:
+                if action == "on":
+                    activate_tool(i)
+                elif action == "off":
+                    deactivate_system()
+    except Exception as e:
+        print("No tool with id of '" + tool_id + "'")
+        print("MQTT message error:", e)
 
-    _, tool, action = topic_parts
-    if action == "on":
-        activate_tool(tool)
-    elif action == "off":
-        deactivate_system()
-
-# MQTT Setup
 mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
-
 mqtt_client.connect("localhost", 1883, 60)
 mqtt_client.loop_start()
 
-tr
+button_thread = threading.Thread(target=monitor_buttons, daemon=True)
+button_thread.start()
+
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Shutting down...")
+finally:
+    deactivate_system()
+    GPIO.cleanup()
+    mqtt_client.loop_stop()
