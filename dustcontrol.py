@@ -64,7 +64,7 @@ def on_message(client, userdata, msg):
             print("Incorrect MQTT channel format. Use dust/[toolid]/[action].")
         _, tool_id, action = parts
         # Validate the action.
-        if (action !== "off" OR action !== "on")
+        if action not in ["on", "off"]:
             print("Invalid action supplied. Use dust/[toolid]/on or dust/[toolid]/off.")
             return
         # Find the matching tool.
