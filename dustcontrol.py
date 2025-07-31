@@ -63,7 +63,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("dust/+/+")
 
 def on_message(client, userdata, msg):
-    print(TOOLS)
+    print(msg)
     try:
         parts = msg.topic.split("/")
         print(parts)
@@ -71,6 +71,7 @@ def on_message(client, userdata, msg):
             return
         _, tool_id, action = parts
         for i, tool in enumerate(TOOLS):
+            print(i)
             if tool["id"] == tool_id:
                 if action == "on":
                     print(i)
