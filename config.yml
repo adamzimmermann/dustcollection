@@ -7,7 +7,7 @@ tools:
     on_button_pin: 5
     off_button_pin: 6
 
-  - id: saw
+  - id: tablesaw
     name: Table Saw
     relay_pin: 27
     on_button_pin: 13
