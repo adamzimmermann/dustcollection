@@ -51,7 +51,7 @@ def deactivate_system():
     current_tool = None
 
 # MQTT On Connect.
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, rc, properties=None):
     print("Connected to MQTT broker with result code", rc)
     client.subscribe("dust/+/+")
 
