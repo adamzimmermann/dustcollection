@@ -80,7 +80,7 @@ def on_message(client, userdata, msg):
                     activate_tool(i)
                 elif msg == "off":
                     deactivate_system()
-                else
+                else:
                     print("No tool with id of '" + tool_id + "' found.")
     except Exception as e:
         print("MQTT message error:", e)
