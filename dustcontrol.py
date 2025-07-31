@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 import paho.mqtt.client as mqtt
 import json
 import yaml
+from paho.mqtt.client import CallbackAPIVersion
 
 # Load the configuration file.
 with open("config.yml", "r") as file:
@@ -83,7 +84,12 @@ def on_message(client, userdata, msg):
         print("MQTT message error:", e)
 
 # Setup the MQTT client.
-mqtt_client = mqtt.Client(protocol=mqtt.MQTTv311, userdata=None, transport="tcp", callback_api_version=5)
+mqtt_client = mqtt.Client(
+    protocol=mqtt.MQTTv311,
+    userdata=None,
+    transport="tcp",
+    callback_api_version=CallbackAPIVersion.V5
+)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 mqtt_client.connect("localhost", 1883, 60)
