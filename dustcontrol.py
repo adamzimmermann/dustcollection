@@ -70,10 +70,8 @@ def on_message(client, userdata, msg):
             return
         # Find the matching tool.
         for i, tool in enumerate(TOOLS):
-            print(i)
             if tool["id"] == tool_id:
                 if action == "on":
-                    print(i)
                     activate_tool(i)
                     return
                 elif action == "off":
