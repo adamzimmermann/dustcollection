@@ -64,22 +64,25 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     print(msg)
+    print(userdata)
     try:
         parts = msg.topic.split("/")
         print(parts)
-        if len(parts) != 3:
+        if len(parts) != 2:
             return
-        _, tool_id, action = parts
+            print("Incorrect MQTT channel format. Use dust/[toolid].")
+        _, tool_id = parts
         for i, tool in enumerate(TOOLS):
             print(i)
             if tool["id"] == tool_id:
-                if action == "on":
+                if msg == "on":
                     print(i)
                     activate_tool(i)
-                elif action == "off":
+                elif msg == "off":
                     deactivate_system()
+                else
+                    print("No tool with id of '" + tool_id + "' found.")
     except Exception as e:
-        print("No tool with id of '" + tool_id + "'")
         print("MQTT message error:", e)
 
 mqtt_client = mqtt.Client(protocol=mqtt.MQTTv311)
