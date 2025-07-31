@@ -89,7 +89,12 @@ mqtt_client.on_message = on_message
 mqtt_client.connect("localhost", 1883, 60)
 mqtt_client.loop_start()
 
-# Clean-up.
+# Main Program.
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Shutting down...")
 finally:
     deactivate_system()
     GPIO.cleanup()
