@@ -63,8 +63,6 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("dust/+/+")
 
 def on_message(client, userdata, msg):
-    print(msg)
-    print(userdata)
     try:
         parts = msg.topic.split("/")
         print(parts)
@@ -78,10 +76,12 @@ def on_message(client, userdata, msg):
                 if action == "on":
                     print(i)
                     activate_tool(i)
+                    return
                 elif action == "off":
                     deactivate_system()
-                else:
-                    print("No tool with id of '" + tool_id + "' found.")
+                    print("Invalid action supplied. Use dust/[toolid]/on or dust/[toolid]/off.")
+                    return
+        print("No tool with 'id' of '" + tool_id + "' found.")
     except Exception as e:
         print("MQTT message error:", e)
 
