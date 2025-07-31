@@ -88,7 +88,7 @@ mqtt_client = mqtt.Client(
     protocol=mqtt.MQTTv311,
     userdata=None,
     transport="tcp",
-    callback_api_version=CallbackAPIVersion.V5
+    callback_api_version=CallbackAPIVersion.v5
 )
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
