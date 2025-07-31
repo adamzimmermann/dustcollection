@@ -68,17 +68,17 @@ def on_message(client, userdata, msg):
     try:
         parts = msg.topic.split("/")
         print(parts)
-        if len(parts) != 2:
+        if len(parts) != 3:
             return
-            print("Incorrect MQTT channel format. Use dust/[toolid].")
-        _, tool_id = parts
+            print("Incorrect MQTT channel format. Use dust/[toolid]/[action].")
+        _, tool_id, action = parts
         for i, tool in enumerate(TOOLS):
             print(i)
             if tool["id"] == tool_id:
-                if msg == "on":
+                if action == "on":
                     print(i)
                     activate_tool(i)
-                elif msg == "off":
+                elif action == "off":
                     deactivate_system()
                 else:
                     print("No tool with id of '" + tool_id + "' found.")
