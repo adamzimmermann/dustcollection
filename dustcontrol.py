@@ -63,14 +63,17 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("dust/+/+")
 
 def on_message(client, userdata, msg):
+    print(TOOLS)
     try:
         parts = msg.topic.split("/")
+        print(parts)
         if len(parts) != 3:
             return
         _, tool_id, action = parts
         for i, tool in enumerate(TOOLS):
             if tool["id"] == tool_id:
                 if action == "on":
+                    print(i)
                     activate_tool(i)
                 elif action == "off":
                     deactivate_system()
@@ -78,7 +81,7 @@ def on_message(client, userdata, msg):
         print("No tool with id of '" + tool_id + "'")
         print("MQTT message error:", e)
 
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(protocol=mqtt.MQTTv311)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 mqtt_client.connect("localhost", 1883, 60)
