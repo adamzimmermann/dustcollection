@@ -5,10 +5,11 @@ import paho.mqtt.client as mqtt
 import json
 import yaml
 
-# Load YAML file
+# Load the configuration file.
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
+# Setup global variables.
 TOOLS = config["tools"]
 DUST_COLLECTOR_PIN = config["collector_pin"]
 
@@ -19,16 +20,16 @@ current_tool = None
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
+# Setup the dust collection relay pins.
 GPIO.setup(DUST_COLLECTOR_PIN, GPIO.OUT)
 GPIO.output(DUST_COLLECTOR_PIN, GPIO.LOW)
 
+# Setup the tool relay pins.
 for tool in TOOLS:
     GPIO.setup(tool["relay_pin"], GPIO.OUT)
     GPIO.output(tool["relay_pin"], GPIO.LOW)
-    GPIO.setup(tool["on_button_pin"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(tool["off_button_pin"], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Tool control functions
+# Activate a tool.
 def activate_tool(index):
     global current_tool
     print(f"[GPIO/MQTT] Activating {TOOLS[index]['name']}")
@@ -37,39 +38,36 @@ def activate_tool(index):
     GPIO.output(DUST_COLLECTOR_PIN, GPIO.HIGH)
     current_tool = index
 
+# System Shutdown.
 def deactivate_system():
     global current_tool
     print("[GPIO/MQTT] Deactivating all tools")
+    # Disable all tools.
     for tool in TOOLS:
         GPIO.output(tool["relay_pin"], GPIO.LOW)
+    # Disable the dust collection.
     GPIO.output(DUST_COLLECTOR_PIN, GPIO.LOW)
     current_tool = None
 
-# Button listeners
-def monitor_buttons():
-    while True:
-        for i, tool in enumerate(TOOLS):
-            if GPIO.input(tool["on_button_pin"]) == GPIO.LOW:
-                activate_tool(i)
-                time.sleep(0.3)
-            elif GPIO.input(tool["off_button_pin"]) == GPIO.LOW:
-                deactivate_system()
-                time.sleep(0.3)
-        time.sleep(0.1)
-
-# MQTT callbacks
+# MQTT On Connect.
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker with result code", rc)
     client.subscribe("dust/+/+")
 
+# MQTT Message Callback.
 def on_message(client, userdata, msg):
     try:
+        # Separate the parts of the channel.
         parts = msg.topic.split("/")
-        print(parts)
         if len(parts) != 3:
             return
             print("Incorrect MQTT channel format. Use dust/[toolid]/[action].")
         _, tool_id, action = parts
+        # Validate the action.
+        if (action !== "off" OR action !== "on")
+            print("Invalid action supplied. Use dust/[toolid]/on or dust/[toolid]/off.")
+            return
+        # Find the matching tool.
         for i, tool in enumerate(TOOLS):
             print(i)
             if tool["id"] == tool_id:
@@ -79,26 +77,19 @@ def on_message(client, userdata, msg):
                     return
                 elif action == "off":
                     deactivate_system()
-                    print("Invalid action supplied. Use dust/[toolid]/on or dust/[toolid]/off.")
                     return
         print("No tool with 'id' of '" + tool_id + "' found.")
     except Exception as e:
         print("MQTT message error:", e)
 
+# Setup the MQTT client.
 mqtt_client = mqtt.Client(protocol=mqtt.MQTTv311)
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 mqtt_client.connect("localhost", 1883, 60)
 mqtt_client.loop_start()
 
-button_thread = threading.Thread(target=monitor_buttons, daemon=True)
-button_thread.start()
-
-try:
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    print("Shutting down...")
+# Clean-up.
 finally:
     deactivate_system()
     GPIO.cleanup()
