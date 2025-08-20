@@ -25,20 +25,20 @@ GPIO.setwarnings(False)
 
 # Setup the dust collection relay pins.
 GPIO.setup(DUST_COLLECTOR_PIN, GPIO.OUT)
-GPIO.output(DUST_COLLECTOR_PIN, GPIO.LOW)
+GPIO.output(DUST_COLLECTOR_PIN, GPIO.HIGH)
 
 # Setup the tool relay pins.
 for tool in TOOLS:
     GPIO.setup(tool["relay_pin"], GPIO.OUT)
-    GPIO.output(tool["relay_pin"], GPIO.LOW)
+    GPIO.output(tool["relay_pin"], GPIO.HIGH)
 
 # Activate a tool.
 def activate_tool(index):
     global current_tool
     print(f"[GPIO/MQTT] Activating {TOOLS[index]['name']}")
     for i, tool in enumerate(TOOLS):
-        GPIO.output(tool["relay_pin"], GPIO.HIGH if i == index else GPIO.LOW)
-    GPIO.output(DUST_COLLECTOR_PIN, GPIO.HIGH)
+        GPIO.output(tool["relay_pin"], GPIO.LOW if i == index else GPIO.HIGH)
+    GPIO.output(DUST_COLLECTOR_PIN, GPIO.LOW)
     current_tool = index
 
 # System Shutdown.
@@ -47,9 +47,9 @@ def deactivate_system():
     print("[GPIO/MQTT] Deactivating all tools")
     # Disable all tools.
     for tool in TOOLS:
-        GPIO.output(tool["relay_pin"], GPIO.LOW)
+        GPIO.output(tool["relay_pin"], GPIO.HIGH)
     # Disable the dust collection.
-    GPIO.output(DUST_COLLECTOR_PIN, GPIO.LOW)
+    GPIO.output(DUST_COLLECTOR_PIN, GPIO.HIGH)
     current_tool = None
 
 # MQTT On Connect.
