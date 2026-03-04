@@ -188,6 +188,9 @@ cython_debug/
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 
+# Ignore IDE files.
+.idea/
+
 # Ruff stuff:
 .ruff_cache/
 
@@ -211,3 +214,6 @@ __marimo__/
 
 # Ignore ESPHome Builds.
 .esphome
+
+# ESPHome secrets
+secrets.yaml

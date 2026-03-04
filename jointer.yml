@@ -1,0 +1,44 @@
+esphome:
+  name: jointerbutton
+
+esp8266:
+  board: nodemcuv2
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: ""
+  password: ""
+
+logger:
+
+api:
+
+ota:
+  platform: esphome
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO5  # Change per your wiring
+      mode: INPUT_PULLUP
+      inverted: True
+    name: "Jointer ON Button"
+    on_press:
+      - mqtt.publish:
+          topic: "dust/jointer/on"
+          payload: "1"
+
+  - platform: gpio
+    pin:
+      number: GPIO4  # Change per your wiring
+      mode: INPUT_PULLUP
+      inverted: True
+    name: "Jointer OFF Button"
+    on_press:
+      - mqtt.publish:
+          topic: "dust/jointer/off"
+          payload: "0"
