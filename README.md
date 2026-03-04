@@ -4,16 +4,12 @@ Automates dust collection in a woodworking shop using a Raspberry Pi and ESP8266
 
 ## How It Works
 
-Each tool (jointer, table saw, planer) has a wireless ESP8266 button station mounted nearby. The buttons publish MQTT messages to a Raspberry Pi, which controls relay modules to open/close blast gates and start/stop the dust collector.
+Each tool (jointer, table saw, planer) has a wireless ESP8266 button station mounted nearby. The buttons publish MQTT messages to a MQTT broker running on a Raspberry Pi, which controls relay modules to open/close blast gates and start/stop the dust collector.
 
 ```
 [ESP8266 Button] --MQTT--> [Raspberry Pi] --GPIO--> [Relays] ---> [Blast Gates + Dust Collector]
 ```
-
-### MQTT Topics
-
-- `dust/<tool_id>/on` - Activates the tool's blast gate and the dust collector
-- `dust/<tool_id>/off` - Deactivates all blast gates and the dust collector
+---
 
 ## Hardware
 
@@ -24,13 +20,14 @@ Each tool (jointer, table saw, planer) has a wireless ESP8266 button station mou
 
 ### Per-Tool Button Station
 
-- ESP8266 (NodeMCU v2) board
+- ESP8266 board
 - Momentary push buttons (one ON, one OFF) wired to GPIO5 and GPIO4
 
 ### Blast Gates
 
 The blast gates are [Oneida iVAC Pro Blast Gates](https://www.oneida-air.com/dust-collectors/system-components/electrical/ivac/ivac-pro-blast-gates), controlled via the relay module.
 
+The wiring for the blast gates can be seen in the diagram below:
 ![Manual Blast Gate Control Wiring](manual-blast-gate-control.png)
 
 ### Pin Assignments
@@ -43,6 +40,8 @@ See `config.yml` for the full pin mapping. Summary:
 | Jointer Relay    | 17       |
 | Table Saw Relay  | 27       |
 | Planer Relay     | 22       |
+
+---
 
 ## Setup
 
@@ -98,13 +97,16 @@ See `config.yml` for the full pin mapping. Summary:
    esphome run planer.yml
    ```
 
-## Project Structure
+### MQTT Topics
 
+- `dust/<tool_id>/on` - Activates the tool's blast gate and the dust collector
+- `dust/<tool_id>/off` - Deactivates all blast gates and the dust collector
+
+Publish:
 ```
-config.yml       - Raspberry Pi pin assignments and tool definitions
-dustcontrol.py   - Main control script (runs on the Pi)
-jointer.yml      - ESPHome config for the jointer button station
-tablesaw.yml     - ESPHome config for the table saw button station
-planer.yml       - ESPHome config for the planer button station
-secrets.yaml     - WiFi/MQTT credentials (gitignored)
+mosquitto_pub -h PI_IP_ADDRESS -t "dust/jointer/on" -m "1"
+```
+Listen:
+```
+mosquitto_sub -h PI_IP_ADDRESS -t "dust/#" -v
 ```
